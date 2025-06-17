@@ -1,0 +1,70 @@
+{
+  "name": "@homecheck/vue-canvas-highlighter",
+  "version": "1.0.0",
+  "description": "🚀 Vue.js를 활용한 현대적인 클라이언트-사이드 이미지 분류 및 캔버스 하이라이터 컴포넌트",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.esm.js",
+      "require": "./dist/index.js"
+    },
+    "./style.css": "./dist/style.css"
+  },
+  "keywords": [
+    "vue",
+    "vue3",
+    "canvas",
+    "highlighter",
+    "drawing",
+    "annotation",
+    "typescript",
+    "homecheck"
+  ],
+  "author": "homecheck-garden <garden@homecheck.kr>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kl-homecheck/vue-canvas-highlighter.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kl-homecheck/vue-canvas-highlighter/issues"
+  },
+  "homepage": "https://github.com/kl-homecheck/vue-canvas-highlighter#readme",
+  "publishConfig": {
+    "access": "public",
+    "@homecheck:registry": "https://registry.npmjs.org/"
+  },
+  "scripts": {
+    "build": "vite build && vue-tsc --emitDeclarationOnly",
+    "build:watch": "vite build --watch",
+    "dev": "cd demo && npm run dev",
+    "demo": "cd demo && npm install && npm run dev",
+    "type-check": "vue-tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "peerDependencies": {
+    "vue": "^3.0.0"
+  },
+  "dependencies": {
+    "lz-string": "^1.5.0"
+  },
+  "devDependencies": {
+    "@types/lz-string": "^1.3.34",
+    "@types/node": "^22.10.2",
+    "@vitejs/plugin-vue": "^5.2.3",
+    "typescript": "^5.6.3",
+    "vite": "^6.2.4",
+    "vite-plugin-dts": "^4.5.4",
+    "vite-plugin-vue-devtools": "^7.7.2",
+    "vue": "^3.5.13",
+    "vue-tsc": "^2.1.6"
+  }
+}
