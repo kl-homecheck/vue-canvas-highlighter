@@ -1,6 +1,6 @@
 {
   "name": "@homecheck/vue-canvas-highlighter",
-  "version": "1.0.0",
+  "version": "1.0.0-beta.1",
   "description": "🚀 Vue.js를 활용한 현대적인 클라이언트-사이드 이미지 분류 및 캔버스 하이라이터 컴포넌트",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
