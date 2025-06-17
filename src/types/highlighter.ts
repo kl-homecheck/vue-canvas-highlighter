@@ -38,6 +38,8 @@ export interface HighlighterCanvas {
   undo: () => boolean
   redo: () => boolean
 
+  sizeMode: ComputedRef<'pixel' | 'percent'>
+  setSizeMode: (mode: 'pixel' | 'percent') => void
 
   exportData: () => string
   setCanvasSize: (width: number, height: number) => void

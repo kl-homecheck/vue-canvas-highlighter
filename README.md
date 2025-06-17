@@ -4,7 +4,7 @@
 
 🚀 **Vue.js와 Canvas를 활용한 현대적인 클라이언트-사이드 이미지 분류 및 캔버스 하이라이터 컴포넌트**
 
-Vue 3용 강력하고 직관적인 캔버스 하이라이터 컴포넌트로, 이미지 위에 형광펜으로 표시하고 AI를 활용해 영역을 감지할 수 있습니다.
+Vue 3용 캔버스 하이라이터 컴포넌트로, 이미지 위에 형광펜으로 표시하고 영역을 감지할 수 있습니다.
 
 ## ✨ 주요 기능
 
@@ -17,6 +17,7 @@ Vue 3용 강력하고 직관적인 캔버스 하이라이터 컴포넌트로, �
 - 🖼️ **배경 이미지**: 이미지 파일을 배경으로 설정 가능
 - 📦 **영역 감지**: 하이라이트된 영역을 자동으로 사각형으로 변환
 - 🗂️ **LZ 압축**: 데이터 압축으로 효율적인 저장
+- 📊 **반응형 좌표**: 픽셀 및 퍼센트 기반 좌표 시스템 지원
 
 ## 📦 설치
 
@@ -144,11 +145,17 @@ type ToolType = 'highlighter' | 'eraser'
 ### HighlighterRectangle
 ```typescript
 type HighlighterRectangle = {
-  x: number        // X 좌표
-  y: number        // Y 좌표  
-  width: number    // 너비
-  height: number   // 높이
+  x: number        // X 좌표 (픽셀)
+  y: number        // Y 좌표 (픽셀)
+  width: number    // 너비 (픽셀)
+  height: number   // 높이 (픽셀)
   color: string    // 색상
+  
+  // 퍼센트 기반 좌표 (반응형 대응)
+  xPercent: number      // X 좌표 (%)
+  yPercent: number      // Y 좌표 (%)
+  widthPercent: number  // 너비 (%)
+  heightPercent: number // 높이 (%)
 }
 ```
 
@@ -199,16 +206,6 @@ type HighlighterPoint = {
 }
 ```
 
-## ⌨️ 키보드 단축키
-
-| 단축키 | 기능 |
-|--------|------|
-| `H` | 형광펜 선택 |
-| `E` | 지우개 선택 |
-| `Ctrl+Z` | 실행 취소 |
-| `Ctrl+Y` | 다시 실행 |
-| `Ctrl+S` | 데이터 내보내기 |
-| `Delete` | 전체 삭제 |
 
 ## 🖼️ 지원 이미지 형식
 
@@ -244,42 +241,12 @@ npm run dev
 npm run demo
 ```
 
-## 📖 데모
+## 📌 Issue
 
-온라인 데모는 [여기에서](https://your-demo-url.com) 확인할 수 있습니다.
+❌- import와 export 시, 해상도가 다른 경우 지원되지 않음.
 
-로컬에서 데모를 실행하려면:
 
-```bash
-npm run demo
-```
-
-## 🤝 기여하기
-
-기여를 환영합니다! 다음 단계를 따라주세요:
-
-1. 이 저장소를 Fork 합니다
-2. 새 기능 브랜치를 생성합니다 (`git checkout -b feature/amazing-feature`)
-3. 변경사항을 커밋합니다 (`git commit -m 'Add some amazing feature'`)
-4. 브랜치에 Push 합니다 (`git push origin feature/amazing-feature`)
-5. Pull Request를 생성합니다
 
 ## 📄 라이센스
 
 이 프로젝트는 MIT 라이센스 하에 배포됩니다. 자세한 내용은 [LICENSE](LICENSE) 파일을 참고하세요.
-
-## 🙋‍♂️ 지원
-
-문제가 발생했거나 질문이 있으시면:
-
-- [GitHub Issues](https://github.com/kl-homecheck/vue-canvas-highlighter/issues)에서 이슈를 생성해주세요
-
-
-## 🔗 관련 프로젝트
-
-- [Vue.js](https://vuejs.org/) - 진보적인 JavaScript 프레임워크
-- [LZ-String](https://github.com/pieroxy/lz-string) - 데이터 압축 라이브러리
-
----
-
-⭐ 이 프로젝트가 도움이 되셨다면 스타를 눌러주세요! 

@@ -30,6 +30,15 @@
         </button>
         <button 
             class="tool-button"
+                @click="toggleSizeMode"
+                title="Toggle Size Mode"
+            >
+                <span class="tool-icon">🔍</span>
+                <span class="tool-label">Size Mode :</span>
+                <span class="tool-shortcut">{{ highlighterRef?.sizeMode }}</span>
+            </button>
+        <button 
+            class="tool-button"
                 :class="{ active: highlighterRef?.isShowDetectedRectangles }"
                 @click="toggleRectangles"
                 title="Show/Hide Detected Regions"
@@ -118,7 +127,7 @@
             <div class="size-section">
             <div class="size-control">
                 <label for="brush-size" class="size-label">
-                🖍️ Highlighter: {{ highlighterRef?.currentBrushSize }}px
+                🖍️ Highlighter: {{ highlighterRef?.currentBrushSize }} {{ highlighterRef?.sizeMode == 'pixel' ? 'px' : '%' }}
                 </label>
                 <div class="size-slider-container">
                 <input 
@@ -141,7 +150,7 @@
     
             <div class="size-control">
                 <label for="eraser-size" class="size-label">
-                🧽 Eraser: {{ highlighterRef?.currentEraserSize }}px
+                🧽 Eraser: {{ highlighterRef?.currentEraserSize }} {{ highlighterRef?.sizeMode == 'pixel' ? 'px' : '%' }}
                 </label>
                 <div class="size-slider-container">
                 <input 
@@ -321,6 +330,9 @@
     exportedData.value = data
   }
   
+  function toggleSizeMode() {
+    highlighterRef.value?.setSizeMode(highlighterRef.value?.sizeMode === 'pixel' ? 'percent' : 'pixel')
+  }
   
   // Computed 속성들
   // Size Preview Style
@@ -615,7 +627,6 @@ li {
   }
   
   .tool-button:hover {
-    background: #f5f5f5;
     border-color: #999;
     transform: translateY(-1px);
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);

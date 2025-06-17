@@ -1,15 +1,15 @@
 <template>
   <!-- 주 캔버스 영역 -->
   <div class="canvas-container">
-    <canvas ref="fabricCanvas" :width="canvasWidth" :height="canvasHeight" class="highlighter-canvas" />
+    <canvas ref="highlighter" :width="canvasWidth" :height="canvasHeight" class="highlighter-canvas" />
     <div v-if="isShowDetectedRectangles" class="detected-rectangles">
       <div v-for="(rect, i) in detectedRectangles" :key="i" class="detected-rectangle" :style="{
         position: 'absolute',
         pointerEvents: 'none',
-        left: Math.round(rect.x) + 'px',
-        top: Math.round(rect.y) + 'px',
-        width: Math.round(rect.width) + 'px',
-        height: Math.round(rect.height) + 'px',
+        left: Math.round(rect.xPercent ) + '%',
+        top: Math.round(rect.yPercent) + '%',
+        width: Math.round(rect.widthPercent) + '%',
+        height: Math.round(rect.heightPercent) + '%',
         backgroundColor: toRgba(rect.color, 0.1),
         border: '3px dashed ' + toRgba(rect.color, 1),
         zIndex: 1000,
@@ -21,7 +21,7 @@
 
 </template>
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
+import { ref, onMounted, onUnmounted, watch, computed, nextTick } from 'vue'
 import { parseCompressedData, extractFinalRegions, drawContextWithParsedData, renderRegion, renderStroke, renderFinalRegion, compressStrokes, splitStrokeByErasers, calculateStrokeLength, renderLoadedRegionOnContext, renderStrokeOnContext, findConnectedRegionsInImageData, dataToRectangles } from './utils'
 import { toRgba } from './utils/color'
 import * as LZString from 'lz-string'
@@ -49,7 +49,7 @@ const canvasWidth = ref<number>(800)
 const canvasHeight = ref<number>(600)
 
 // Canvas
-const fabricCanvas = ref<HTMLCanvasElement>()
+const highlighter = ref<HTMLCanvasElement>()
 const canvasContext = ref<CanvasRenderingContext2D | null>(null)
 
 // Highlighter Canvas
@@ -74,8 +74,12 @@ const currentColor = ref<string>('#ffff00')
 
 
 // Size Controls
-const currentBrushSize = ref<number>(15)
-const currentEraserSize = ref<number>(15)
+const currentBrushSize = ref<number>(5)
+const currentEraserSize = ref<number>(5);
+
+const computedBrushSize = computed(() => sizeMode.value === 'pixel' ? currentBrushSize.value : currentBrushSize.value * (highlighter.value!.width ?? 1) / 100)
+const computedEraserSize = computed(() => sizeMode.value === 'pixel' ? currentEraserSize.value : currentEraserSize.value * (highlighter.value!.width ?? 1) / 100)
+const sizeMode = ref<'pixel' | 'percent'>('percent')
 
 // Drawing State
 const isDrawing = ref(false)
@@ -167,13 +171,13 @@ const loadedRegions = ref<HighlighterRegion[]>([])
 
 // Initialize canvas
 function initCanvas() {
-  if (fabricCanvas.value) {
-    canvasContext.value = fabricCanvas.value.getContext('2d')
+  if (highlighter.value) {
+    canvasContext.value = highlighter.value.getContext('2d')
 
     // Create highlighter off-screen canvas
     highlighterCanvas.value = document.createElement('canvas')
-    highlighterCanvas.value.width = fabricCanvas.value.width
-    highlighterCanvas.value.height = fabricCanvas.value.height
+    highlighterCanvas.value.width = highlighter.value.width
+    highlighterCanvas.value.height = highlighter.value.height
     highlighterContext.value = highlighterCanvas.value.getContext('2d')
 
     if (canvasContext.value && highlighterContext.value) {
@@ -187,77 +191,59 @@ function initCanvas() {
       setTimeout(() => saveToHistory(), 100)
 
       // Add drawing event listeners
-      fabricCanvas.value.addEventListener('mousedown', startDrawing)
-      fabricCanvas.value.addEventListener('mousemove', draw)
-      fabricCanvas.value.addEventListener('mouseup', stopDrawing)
-      fabricCanvas.value.addEventListener('mouseout', stopDrawing)
+      highlighter.value.addEventListener('mousedown', startDrawing)
+      highlighter.value.addEventListener('mousemove', draw)
+      highlighter.value.addEventListener('mouseup', stopDrawing)
+      highlighter.value.addEventListener('mouseout', stopDrawing)
 
       // Support touch events (mobile)
-      fabricCanvas.value.addEventListener('touchstart', handleTouchStart)
-      fabricCanvas.value.addEventListener('touchmove', handleTouchMove)
-      fabricCanvas.value.addEventListener('touchend', stopDrawing)
+      highlighter.value.addEventListener('touchstart', handleTouchStart)
+      highlighter.value.addEventListener('touchmove', handleTouchMove)
+      highlighter.value.addEventListener('touchend', stopDrawing)
     }
   }
 }
 
 // Redraw entire canvas (background image + highlighter layer)
-function redrawCanvas() {
-  if (!canvasContext.value || !fabricCanvas.value || !highlighterCanvas.value) return
+function redrawCanvas(imgElement : HTMLImageElement | null = null) {
+  console.log('redrawCanvas : ', imgElement)
+  if (!canvasContext.value || !highlighter.value || !highlighterCanvas.value) return
 
-  const canvas = fabricCanvas.value
+  const img =  imgElement || backgroundImage.value
+
+  const canvas = highlighter.value
   const ctx = canvasContext.value
 
   // Clear main canvas
   ctx.clearRect(0, 0, canvas.width, canvas.height)
 
   // 1. Draw background image or background color
-  if (backgroundImage.value && backgroundImageLoaded.value) {
-    // Resize image to canvas size
-    /*
-    const imgAspect = backgroundImage.value.width / backgroundImage.value.height
-    const canvasAspect = canvas.width / canvas.height
+  if (img && backgroundImageLoaded.value) {
+    // 캔버스 크기를 이미지 크기에 맞춤
 
-    let drawWidth, drawHeight, offsetX = 0, offsetY = 0
-
-    if (imgAspect > canvasAspect) {
-      // Image is wider - adjust height
-      drawHeight = canvas.height
-      drawWidth = drawHeight * imgAspect
-      offsetX = (canvas.width - drawWidth) / 2
-    } else {
-      // Image is taller - adjust width
-      drawWidth = canvas.width
-      drawHeight = drawWidth / imgAspect
-      offsetY = (canvas.height - drawHeight) / 2
-    }
-
-    ctx.drawImage(backgroundImage.value, offsetX, offsetY, drawWidth, drawHeight)
-    */
-    canvas.width = backgroundImage.value.width
-    canvas.height = backgroundImage.value.height
-    canvasWidth.value = backgroundImage.value.width
-    canvasHeight.value = backgroundImage.value.height
-    ctx.drawImage(backgroundImage.value, 0, 0)
+    ctx.drawImage(img, 0, 0, img.width, img.height)
   } else {
-    // Set background color
+    // 배경색 설정
     ctx.fillStyle = backgroundColor.value || '#ffffff'
     ctx.fillRect(0, 0, canvas.width, canvas.height)
   }
 
   // 2. Composite highlighter layer (multiply mode for highlighter effect)
   ctx.globalCompositeOperation = 'multiply'
-  ctx.drawImage(highlighterCanvas.value, 0, 0)
+  console.log('redrawCanvas : ', highlighterCanvas.value)
+  ctx.drawImage(highlighterCanvas.value, 0, 0, canvas.width, canvas.height)
   ctx.globalCompositeOperation = 'source-over'
+
 }
 
 
 // Optimize Strokes
 async function optimizeStrokes() {
-  if (!fabricCanvas.value || !highlighterContext.value || !highlighterCanvas.value) return
+  if (!highlighter.value || !highlighterContext.value || !highlighterCanvas.value) return
 
   // 1. Analyze actual rendering results based on current canvas state
-  const canvasWidth = fabricCanvas.value.width
-  const canvasHeight = fabricCanvas.value.height
+  const canvasWidth = highlighter.value.width
+  const canvasHeight = highlighter.value.height
 
   // 2. Redraw highlighter layer to check actual results
   highlighterContext.value.clearRect(0, 0, canvasWidth, canvasHeight)
@@ -286,7 +272,7 @@ async function optimizeStrokes() {
 
   // 7. Redraw canvas (based on final state with eraser effect applied)
   // Extract final regions and redraw
-  const finalRegions = extractFinalRegions(fabricCanvas.value, highlighterContext.value, strokes.value, loadedRegions.value)
+  const finalRegions = extractFinalRegions(highlighter.value, highlighterContext.value, strokes.value, loadedRegions.value)
 
   // Clear canvas
   highlighterContext.value.clearRect(0, 0, canvasWidth, canvasHeight)
@@ -305,10 +291,11 @@ async function optimizeStrokes() {
 // Start drawing
 function startDrawing(e: MouseEvent) {
   isDrawing.value = true
-  const rect = fabricCanvas.value?.getBoundingClientRect()
+  const rect = highlighter.value?.getBoundingClientRect()
+  
   if (rect) {
-    lastX.value = e.clientX - rect.left
-    lastY.value = e.clientY - rect.top
+    lastX.value = (e.clientX - rect.left) * highlighter.value!.width / rect.width
+    lastY.value = (e.clientY - rect.top) * highlighter.value!.height / rect.height
 
     // Start new stroke
     currentStroke.value = [{ x: lastX.value, y: lastY.value }]
@@ -320,11 +307,11 @@ function startDrawing(e: MouseEvent) {
 function draw(e: MouseEvent) {
   if (!isDrawing.value || !highlighterContext.value) return
 
-  const rect = fabricCanvas.value?.getBoundingClientRect()
+  const rect = highlighter.value?.getBoundingClientRect()
   if (!rect) return
 
-  const currentX = e.clientX - rect.left
-  const currentY = e.clientY - rect.top
+  const currentX = (e.clientX - rect.left) * highlighter.value!.width / rect.width
+  const currentY = (e.clientY - rect.top) * highlighter.value!.height / rect.height
 
   // Draw on highlighter layer
   highlighterContext.value.beginPath()
@@ -335,14 +322,14 @@ function draw(e: MouseEvent) {
     // Set highlighter settings
     highlighterContext.value.globalCompositeOperation = 'source-over'
     highlighterContext.value.strokeStyle = currentColor.value
-    highlighterContext.value.lineWidth = currentBrushSize.value
+    highlighterContext.value.lineWidth = computedBrushSize.value
     highlighterContext.value.lineCap = 'round'
     highlighterContext.value.lineJoin = 'round'
     highlighterContext.value.globalAlpha = 0.5
   } else if (currentTool.value === 'eraser') {
     // Set eraser settings (only on highlighter layer)
     highlighterContext.value.globalCompositeOperation = 'destination-out'
-    highlighterContext.value.lineWidth = currentEraserSize.value
+    highlighterContext.value.lineWidth = computedEraserSize.value
     highlighterContext.value.lineCap = 'round'
     highlighterContext.value.lineJoin = 'round'
     highlighterContext.value.globalAlpha = 1
@@ -374,7 +361,7 @@ async function stopDrawing() {
       const newStroke = {
         type: currentStrokeType.value,
         color: currentTool.value === 'highlighter' ? currentColor.value : '#000000',
-        size: currentTool.value === 'highlighter' ? currentBrushSize.value : currentEraserSize.value,
+        size: currentTool.value === 'highlighter' ? computedBrushSize.value : computedEraserSize.value,
         points: [...currentStroke.value],
         opacity: currentTool.value === 'highlighter' ? 0.5 : 1.0
       }
@@ -393,6 +380,9 @@ async function stopDrawing() {
     // Save to history
     saveToHistory()
     emit('data-changed', exportData())
+    if(highlighterCanvas.value){
+      console.log('highlighterCanvas.value : ', highlighterCanvas.value.toDataURL())
+    }
 
     // If region highlighting is enabled, automatically generate rectangles
     setTimeout(() => {
@@ -423,15 +413,8 @@ function handleTouchMove(e: TouchEvent) {
   draw(mouseEvent)
 }
 
-// 캔버스 크기 변경 감지
-watch([() => canvasWidth.value, () => canvasHeight.value], () => {
-  if (fabricCanvas.value && highlighterCanvas.value) {
-    // 형광펜 캔버스 크기 조정
-    highlighterCanvas.value.width = fabricCanvas.value.width
-    highlighterCanvas.value.height = fabricCanvas.value.height
-    redrawCanvas()
-  }
-})
+
+
 
 // 라이프사이클
 onMounted(() => {
@@ -443,14 +426,14 @@ onMounted(() => {
 onUnmounted(() => {
 
   // Canvas 이벤트 리스너 제거
-  if (fabricCanvas.value) {
-    fabricCanvas.value.removeEventListener('mousedown', startDrawing)
-    fabricCanvas.value.removeEventListener('mousemove', draw)
-    fabricCanvas.value.removeEventListener('mouseup', stopDrawing)
-    fabricCanvas.value.removeEventListener('mouseout', stopDrawing)
-    fabricCanvas.value.removeEventListener('touchstart', handleTouchStart)
-    fabricCanvas.value.removeEventListener('touchmove', handleTouchMove)
-    fabricCanvas.value.removeEventListener('touchend', stopDrawing)
+  if (highlighter.value) {
+    highlighter.value.removeEventListener('mousedown', startDrawing)
+    highlighter.value.removeEventListener('mousemove', draw)
+    highlighter.value.removeEventListener('mouseup', stopDrawing)
+    highlighter.value.removeEventListener('mouseout', stopDrawing)
+    highlighter.value.removeEventListener('touchstart', handleTouchStart)
+    highlighter.value.removeEventListener('touchmove', handleTouchMove)
+    highlighter.value.removeEventListener('touchend', stopDrawing)
   }
 
 })
@@ -460,10 +443,10 @@ onUnmounted(() => {
 
 // Export Data
 function exportData(): string {
-  if (!fabricCanvas.value || !highlighterCanvas.value) return ''
+  if (!highlighter.value || !highlighterCanvas.value) return ''
 
-  const canvasWidth = fabricCanvas.value.width
-  const canvasHeight = fabricCanvas.value.height
+  const canvasWidth = highlighter.value.width
+  const canvasHeight = highlighter.value.height
   if (!highlighterCanvas.value || !highlighterContext.value) {
     return ''
   }
@@ -572,10 +555,25 @@ function loadBackgroundImage(imageSource: string | File | Blob): Promise<void> {
   return new Promise((resolve, reject) => {
     const img = new Image()
 
+    
     img.onload = () => {
       backgroundImage.value = img
       backgroundImageLoaded.value = true
-      redrawCanvas()
+      highlighter.value!.width = img.width
+      highlighter.value!.height = img.height
+      canvasWidth.value = img.width
+      canvasHeight.value = img.height
+      if(highlighterCanvas.value){
+          highlighterCanvas.value.width = img.width
+          highlighterCanvas.value.height = img.height
+          highlighterContext.value!.clearRect(0, 0, highlighterCanvas.value.width, highlighterCanvas.value.height)
+          
+      }
+      nextTick(()=>{
+        redrawCanvas()
+      })
+    
+      
       saveToHistory()
       resolve()
     }
@@ -604,7 +602,7 @@ function loadBackgroundImage(imageSource: string | File | Blob): Promise<void> {
 
 // Create Rectangle Regions (based on final rendering)
 async function generateRectangles(): Promise<HighlighterRectangle[]> {
-  if (!fabricCanvas.value) {
+  if (!highlighter.value) {
     return []
   }
   try {
@@ -755,6 +753,9 @@ defineExpose<HighlighterCanvas>({
   undo: undo,
   redo: redo,
 
+  sizeMode: computed(() => sizeMode.value),
+  setSizeMode: (mode: 'pixel' | 'percent') => { sizeMode.value = mode },
+
 
   exportData: exportData,
 
@@ -776,5 +777,7 @@ defineExpose<HighlighterCanvas>({
 .highlighter-canvas {
   border: 1px solid #ccc;
   display: block;
+  width: 100%;
+  height: 100%;
 }
 </style>
