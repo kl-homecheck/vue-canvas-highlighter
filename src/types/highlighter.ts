@@ -51,6 +51,11 @@ export type HighlighterRectangle = {
   width: number
   height: number
   color: string
+
+  xPercent: number
+  yPercent: number
+  widthPercent: number
+  heightPercent: number
 }
 
 

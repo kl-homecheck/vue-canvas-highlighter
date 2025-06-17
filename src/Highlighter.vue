@@ -213,6 +213,7 @@ function redrawCanvas() {
   // 1. Draw background image or background color
   if (backgroundImage.value && backgroundImageLoaded.value) {
     // Resize image to canvas size
+    /*
     const imgAspect = backgroundImage.value.width / backgroundImage.value.height
     const canvasAspect = canvas.width / canvas.height
 
@@ -231,6 +232,12 @@ function redrawCanvas() {
     }
 
     ctx.drawImage(backgroundImage.value, offsetX, offsetY, drawWidth, drawHeight)
+    */
+    canvas.width = backgroundImage.value.width
+    canvas.height = backgroundImage.value.height
+    canvasWidth.value = backgroundImage.value.width
+    canvasHeight.value = backgroundImage.value.height
+    ctx.drawImage(backgroundImage.value, 0, 0)
   } else {
     // Set background color
     ctx.fillStyle = backgroundColor.value || '#ffffff'
@@ -620,7 +627,12 @@ async function generateRectangles(): Promise<HighlighterRectangle[]> {
         y: region.bounds.y,
         width: region.bounds.width,
         height: region.bounds.height,
-        color: region.color
+        color: region.color,
+
+        xPercent: region.bounds.x / canvasWidth.value * 100,
+        yPercent: region.bounds.y / canvasHeight.value * 100,
+        widthPercent: region.bounds.width / canvasWidth.value * 100,
+        heightPercent: region.bounds.height / canvasHeight.value * 100,
       }
       return rect
     })
@@ -682,14 +694,18 @@ async function importDataFromCompressedString(compressedData: string): Promise<v
 
 
 
-    await drawContextWithParsedData(highlighterContext.value, canvasWidth.value, canvasHeight.value, parsedData)
+    await drawContextWithParsedData(
+      highlighterContext.value, 
+      parsedData.width, 
+      parsedData.height, 
+      parsedData
+    )
     redrawCanvas()
 
     // Initialize history (remove undo/redo functionality)
     canvasHistory.value = []
     historyIndex.value = -1
     
-    console.log('dataToRectangles', await dataToRectangles(compressedData))
     emit('data-changed', JSON.stringify(parsedData))
     generateRectangles();
   } catch (error) {

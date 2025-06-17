@@ -309,19 +309,19 @@ export async function parseCompressedData(compressedData: string): Promise<Highl
 // Import new region-based data
 export async function drawContextWithParsedData(
   context : CanvasRenderingContext2D,
-  canvasWidth : number, 
-  canvasHeight : number, 
+  renderWidth : number, 
+  renderHeight : number, 
   parsedData: HighlighterExportData
 ): Promise<void> 
   {
 
   // Clear highlighter layer
-  context.clearRect(0, 0, canvasWidth, canvasHeight)
+  context.clearRect(0, 0, renderWidth, renderHeight)
 
   // Draw each region on canvas
   for (let i = 0; i < parsedData.regions.length; i++) {
     const region = parsedData.regions[i]
-    await renderRegion(context, region, canvasWidth, canvasHeight)
+    await renderRegion(context, region, renderWidth, renderHeight)
   }
 }
 
@@ -465,17 +465,24 @@ export async function dataToRectangles(compressedData : string) : Promise<Highli
     }
 
 
-    // 2. Convert regions to rectangles
+    // 2. Convert regions to rectangles 
+    
     const detectedRects = regions.map((region, index) => {
       const rect: HighlighterRectangle = {
-        x: region.bounds.x, // Already in pixel coordinates in extractFinalRegions
+        x: region.bounds.x , // Already in pixel coordinates in extractFinalRegions
         y: region.bounds.y,
         width: region.bounds.width,
         height: region.bounds.height,
-        color: region.color
+        color: region.color,
+
+        xPercent: region.bounds.x / parsedData.width * 100,
+        yPercent: region.bounds.y / parsedData.height * 100,
+        widthPercent: region.bounds.width / parsedData.width * 100,
+        heightPercent: region.bounds.height / parsedData.height * 100,
       }
       return rect
     })
+    
     return detectedRects;
   } catch (error) {
     console.error('Error in dataToRectangles:', error)
