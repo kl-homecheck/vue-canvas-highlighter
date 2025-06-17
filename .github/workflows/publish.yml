@@ -7,10 +7,17 @@ on:
     types: [closed]
     branches: [main, master]
 
+permissions:
+  contents: write
+  packages: read
+
 jobs:
   publish:
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: read
     
     steps:
       - name: Checkout code
@@ -33,11 +40,30 @@ jobs:
       - name: Build package
         run: npm run build
 
+      - name: Check dist changes
+        id: check_dist
+        run: |
+          # Check if there are any changes in the dist folder
+          if git diff --quiet HEAD~1 HEAD -- dist/ 2>/dev/null || [ ! -d "dist" ]; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "No changes detected in dist folder"
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "Changes detected in dist folder"
+          fi
+
       - name: Get current version
         id: current_version
         run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
 
+      - name: Skip deployment notice
+        if: steps.check_dist.outputs.changed == 'false'
+        run: |
+          echo "🚫 Skipping NPM deployment - no changes detected in dist folder"
+          echo "Only committing code changes without publishing to NPM"
+
       - name: Check if version exists on npm
+        if: steps.check_dist.outputs.changed == 'true'
         id: check_version
         run: |
           if npm view @homecheck/vue-canvas-highlighter@${{ steps.current_version.outputs.version }} version 2>/dev/null; then
@@ -47,18 +73,20 @@ jobs:
           fi
 
       - name: Auto increment version
-        if: steps.check_version.outputs.exists == 'true'
+        if: steps.check_dist.outputs.changed == 'true' && steps.check_version.outputs.exists == 'true'
         run: |
           npm version patch --no-git-tag-version
           echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
         id: new_version
 
       - name: Publish to NPM
+        if: steps.check_dist.outputs.changed == 'true'
         run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_DEPLOY_TOKEN }}
 
       - name: Create git tag
+        if: steps.check_dist.outputs.changed == 'true'
         run: |
           VERSION=${{ steps.new_version.outputs.version || steps.current_version.outputs.version }}
           git config --local user.email "action@github.com"
@@ -69,6 +97,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create GitHub Release
+        if: steps.check_dist.outputs.changed == 'true'
         uses: actions/create-release@v1
         with:
           tag_name: v${{ steps.new_version.outputs.version || steps.current_version.outputs.version }}
