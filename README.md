@@ -1,6 +1,6 @@
 # Vue Canvas Highlighter
 
-## 🌐 [Live Demo](https://your-username.github.io/vue-canvas-highlighter/)
+## 🌐 [Live Demo](https://kl-homecheck.github.io/vue-canvas-highlighter/)
 
 🚀 **Vue.js와 Canvas를 활용한 현대적인 클라이언트-사이드 이미지 분류 및 캔버스 하이라이터 컴포넌트**
 
@@ -272,8 +272,8 @@ npm run demo
 
 문제가 발생했거나 질문이 있으시면:
 
-- [GitHub Issues](https://github.com/your-username/vue-canvas-highlighter/issues)에서 이슈를 생성해주세요
-- [Discussion](https://github.com/your-username/vue-canvas-highlighter/discussions)에서 토론에 참여해보세요
+- [GitHub Issues](https://github.com/kl-homecheck/vue-canvas-highlighter/issues)에서 이슈를 생성해주세요
+
 
 ## 🔗 관련 프로젝트
 
